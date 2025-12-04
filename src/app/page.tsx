@@ -137,12 +137,21 @@ export default function WaiverForm() {
       const element = formRef.current;
       if (!element) return null;
 
+      // Scroll to top to capture full page
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      
+      // Wait a moment for scroll to complete
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       const canvas = await html2canvas(element, {
         useCORS: true,
         allowTaint: true,
         backgroundColor: "#ffffff",
         scale: 1.5,
         logging: false,
+        windowHeight: element.scrollHeight,
+        height: element.scrollHeight,
+        y: 0,
       });
 
       return canvas.toDataURL("image/png");
@@ -157,12 +166,14 @@ export default function WaiverForm() {
 
     if (!validateForm()) return;
 
+    // Capture screenshot BEFORE showing the modal
+    const screenshot = await captureScreenshot();
+
     setIsSubmitting(true);
     setProgressStep(0);
 
     try {
-      // Step 0: Capture screenshot
-      const screenshot = await captureScreenshot();
+      // Step 0: Screenshot already captured
       setProgressStep(1);
 
       // Step 1: Processing
