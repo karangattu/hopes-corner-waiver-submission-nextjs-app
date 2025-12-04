@@ -74,7 +74,7 @@ SHAREPOINT_WORKSHEET_NAME=Sheet1
 2. Go to [vercel.com](https://vercel.com) and sign in
 3. Click "Add New Project"
 4. Import your repository
-5. Set the root directory to `nextjs`
+5. Set the root directory to `hopes-corner-waiver-submission-nextjs-app`
 6. Add your environment variables
 7. Deploy!
 
