@@ -137,24 +137,63 @@ export default function WaiverForm() {
       const element = formRef.current;
       if (!element) return null;
 
+      // Store original scroll position
+      const originalScrollY = window.scrollY;
+      
       // Scroll to top to capture full page
       window.scrollTo({ top: 0, behavior: 'instant' });
       
-      // Wait a moment for scroll to complete
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Wait for scroll and any animations to complete
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Get the full dimensions of the element
+      const rect = element.getBoundingClientRect();
+      const fullWidth = element.scrollWidth;
+      const fullHeight = element.scrollHeight;
 
       const canvas = await html2canvas(element, {
         useCORS: true,
         allowTaint: true,
         backgroundColor: "#ffffff",
-        scale: 1.5,
+        scale: 2, // Higher quality
         logging: false,
-        windowHeight: element.scrollHeight,
-        height: element.scrollHeight,
+        width: fullWidth,
+        height: fullHeight,
+        windowWidth: fullWidth,
+        windowHeight: fullHeight,
+        x: 0,
         y: 0,
+        scrollX: 0,
+        scrollY: 0,
+        foreignObjectRendering: false,
+        removeContainer: true,
+        onclone: (clonedDoc) => {
+          // Ensure all content is visible in the cloned document
+          const clonedElement = clonedDoc.body.querySelector('[data-screenshot-target]') || clonedDoc.body.firstElementChild;
+          if (clonedElement) {
+            // Remove any sticky positioning that might cause issues
+            const stickyElements = clonedDoc.querySelectorAll('.sticky');
+            stickyElements.forEach((el) => {
+              (el as HTMLElement).style.position = 'relative';
+              (el as HTMLElement).style.top = 'auto';
+            });
+            // Ensure overflow is visible
+            const allElements = clonedDoc.querySelectorAll('*');
+            allElements.forEach((el) => {
+              const style = window.getComputedStyle(el);
+              if (style.overflow === 'hidden' || style.overflowY === 'hidden') {
+                (el as HTMLElement).style.overflow = 'visible';
+                (el as HTMLElement).style.overflowY = 'visible';
+              }
+            });
+          }
+        },
       });
 
-      return canvas.toDataURL("image/png");
+      // Restore original scroll position
+      window.scrollTo({ top: originalScrollY, behavior: 'instant' });
+
+      return canvas.toDataURL("image/png", 0.95);
     } catch (error) {
       console.error("Screenshot capture failed:", error);
       return null;
@@ -223,7 +262,11 @@ export default function WaiverForm() {
   };
 
   return (
-    <div className="min-h-screen py-6 sm:py-8 px-3 sm:px-4 safe-area-padding" ref={formRef}>
+    <div 
+      className="min-h-screen py-6 sm:py-8 px-3 sm:px-4 safe-area-padding" 
+      ref={formRef}
+      data-screenshot-target="true"
+    >
       <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
         {/* Notification Toast - responsive positioning */}
         {notification && (
