@@ -1,0 +1,8 @@
+# Ensure node/npm are in PATH
+export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
+
+# Run linting
+npm run lint
+
+# Run all tests
+npm test

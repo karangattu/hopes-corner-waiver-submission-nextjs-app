@@ -93,9 +93,9 @@ SHAREPOINT_WORKSHEET_NAME=Sheet1
    ```
 
 3. Deploy:
+
    ```bash
-   cd nextjs
-   vercel
+   vercel --prod
    ```
 
 ### Environment Variables on Vercel
