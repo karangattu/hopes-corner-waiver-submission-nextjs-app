@@ -45,12 +45,14 @@ export default function WaiverForm() {
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [progressStep, setProgressStep] = useState(0);
+  const [showScreenshotDoc, setShowScreenshotDoc] = useState(false);
   const [notification, setNotification] = useState<{
     type: "success" | "error" | "warning";
     message: string;
   } | null>(null);
 
   const formRef = useRef<HTMLDivElement>(null);
+  const screenshotRef = useRef<HTMLDivElement>(null);
   const t = translations[language];
   const agreementContent = getAgreementContent(getCurrentYear());
 
@@ -134,72 +136,45 @@ export default function WaiverForm() {
   const captureScreenshot = async (): Promise<string | null> => {
     try {
       const html2canvas = (await import("html2canvas")).default;
-      const element = formRef.current;
-      if (!element) return null;
-
-      // Store original scroll position
-      const originalScrollY = window.scrollY;
       
-      // Scroll to top to capture full page
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      // Show the screenshot document
+      setShowScreenshotDoc(true);
       
-      // Wait for scroll and any animations to complete
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      // Get the full dimensions of the element
-      const rect = element.getBoundingClientRect();
-      const fullWidth = element.scrollWidth;
-      const fullHeight = element.scrollHeight;
+      // Wait for the document to render fully (including background images)
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      
+      const element = screenshotRef.current;
+      if (!element) {
+        setShowScreenshotDoc(false);
+        return null;
+      }
 
       const canvas = await html2canvas(element, {
         useCORS: true,
         allowTaint: true,
         backgroundColor: "#ffffff",
-        scale: 2, // Higher quality
+        scale: 2,
         logging: false,
-        width: fullWidth,
-        height: fullHeight,
-        windowWidth: fullWidth,
-        windowHeight: fullHeight,
-        x: 0,
-        y: 0,
-        scrollX: 0,
-        scrollY: 0,
-        foreignObjectRendering: false,
-        removeContainer: true,
-        onclone: (clonedDoc) => {
-          // Ensure all content is visible in the cloned document
-          const clonedElement = clonedDoc.body.querySelector('[data-screenshot-target]') || clonedDoc.body.firstElementChild;
-          if (clonedElement) {
-            // Remove any sticky positioning that might cause issues
-            const stickyElements = clonedDoc.querySelectorAll('.sticky');
-            stickyElements.forEach((el) => {
-              (el as HTMLElement).style.position = 'relative';
-              (el as HTMLElement).style.top = 'auto';
-            });
-            // Ensure overflow is visible
-            const allElements = clonedDoc.querySelectorAll('*');
-            allElements.forEach((el) => {
-              const style = window.getComputedStyle(el);
-              if (style.overflow === 'hidden' || style.overflowY === 'hidden') {
-                (el as HTMLElement).style.overflow = 'visible';
-                (el as HTMLElement).style.overflowY = 'visible';
-              }
-            });
+        imageTimeout: 0, // No timeout for images
+        onclone: (clonedDoc, clonedElement) => {
+          // Ensure the signature background is preserved
+          const sigDiv = clonedElement.querySelector('[aria-label="Signature"]') as HTMLElement;
+          if (sigDiv && signatureData) {
+            sigDiv.style.backgroundImage = `url(${signatureData})`;
           }
         },
       });
 
-      // Restore original scroll position
-      window.scrollTo({ top: originalScrollY, behavior: 'instant' });
+      // Hide the screenshot document
+      setShowScreenshotDoc(false);
 
       return canvas.toDataURL("image/png", 0.95);
     } catch (error) {
       console.error("Screenshot capture failed:", error);
+      setShowScreenshotDoc(false);
       return null;
     }
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -265,7 +240,6 @@ export default function WaiverForm() {
     <div 
       className="min-h-screen py-6 sm:py-8 px-3 sm:px-4 safe-area-padding" 
       ref={formRef}
-      data-screenshot-target="true"
     >
       <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
         {/* Notification Toast - responsive positioning */}
@@ -606,6 +580,126 @@ export default function WaiverForm() {
           </p>
         </footer>
       </div>
+
+      {/* Hidden Screenshot Document - Wide format for printing */}
+      {showScreenshotDoc && (
+        <div className="fixed inset-0 z-[100] bg-white overflow-hidden">
+          <div 
+            ref={screenshotRef}
+            className="bg-white p-6"
+            style={{ fontFamily: 'system-ui, -apple-system, sans-serif', width: '1100px' }}
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center mb-4 pb-3 border-b-2 border-gray-300">
+              <div>
+                <h1 className="text-xl font-bold text-gray-800">Hope&apos;s Corner</h1>
+                <p className="text-xs text-gray-600">
+                  {language === 'es' 
+                    ? 'Exención de Responsabilidad y Acuerdo de Participante'
+                    : 'Liability Waiver & Participant Agreement'
+                  }
+                </p>
+              </div>
+              <div className="text-right text-xs text-gray-600">
+                <p><strong>{language === 'es' ? 'Fecha:' : 'Date:'}</strong> {signatureDate}</p>
+                <p className="text-gray-400">
+                  {language === 'es'
+                    ? `Generado: ${new Date().toLocaleDateString('es-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                    : `Generated: ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* Participant Info & Signature Row */}
+            <div className="flex gap-6 mb-4">
+              <div className="flex-1 bg-gray-50 p-3 rounded border border-gray-200">
+                <h2 className="text-sm font-semibold text-gray-700 mb-2">
+                  {language === 'es' ? 'Información del Participante' : 'Participant Information'}
+                </h2>
+                <div className="grid grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <span className="text-gray-500">{language === 'es' ? 'Nombre:' : 'Name:'}</span>
+                    <p className="text-gray-900 font-semibold">{fullName}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">{language === 'es' ? 'Iniciales:' : 'Initials:'}</span>
+                    <p className="text-gray-900 font-semibold">{initials}</p>
+                  </div>
+                  {minorNames && (
+                    <div>
+                      <span className="text-gray-500">{language === 'es' ? 'Menor(es):' : 'Minor(s):'}</span>
+                      <p className="text-gray-900">{minorNames}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                <h2 className="text-sm font-semibold text-gray-700 mb-2">
+                  {language === 'es' ? 'Firma Electrónica' : 'Electronic Signature'}
+                </h2>
+                {signatureData && (
+                  <div 
+                    className="border border-gray-300 rounded bg-white"
+                    style={{
+                      width: '200px',
+                      height: '60px',
+                      backgroundImage: `url(${signatureData})`,
+                      backgroundSize: 'contain',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'center',
+                    }}
+                    aria-label="Signature"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Two Column Layout for Waiver and Agreement */}
+            <div className="flex gap-4">
+              {/* Liability Waiver */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-sm font-semibold text-gray-700">
+                    {language === 'es' ? 'Exención de Responsabilidad' : 'Liability Waiver'}
+                  </h2>
+                  <span className="text-green-600 text-xs font-bold">✓ {language === 'es' ? 'Aceptado' : 'Accepted'}</span>
+                </div>
+                <div 
+                  className="text-gray-600 bg-gray-50 p-2 rounded border border-gray-200 overflow-hidden"
+                  style={{ fontSize: '6px', lineHeight: '1.3', maxHeight: '400px' }}
+                >
+                  {waiverContent[language]}
+                </div>
+              </div>
+
+              {/* Participant Agreement */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-sm font-semibold text-gray-700">
+                    {language === 'es' 
+                      ? `Acuerdo de Participante ${getCurrentYear()}`
+                      : `${getCurrentYear()} Participant Agreement`
+                    }
+                  </h2>
+                  <span className="text-green-600 text-xs font-bold">✓ {language === 'es' ? 'Aceptado' : 'Accepted'}</span>
+                </div>
+                <div 
+                  className="text-gray-600 bg-gray-50 p-2 rounded border border-gray-200 overflow-hidden"
+                  style={{ fontSize: '6px', lineHeight: '1.3', maxHeight: '400px' }}
+                >
+                  {agreementContent[language]}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-3 pt-2 border-t border-gray-200 text-center text-xs text-gray-400">
+              © {getCurrentYear()} Hope&apos;s Corner, Inc. All rights reserved.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
