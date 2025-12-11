@@ -39,6 +39,7 @@ export default function WaiverForm() {
   const [signatureDate, setSignatureDate] = useState(getPacificDate());
   const [waiverAcknowledged, setWaiverAcknowledged] = useState(false);
   const [agreementAcknowledged, setAgreementAcknowledged] = useState(false);
+  const [unhousedAcknowledged, setUnhousedAcknowledged] = useState(false);
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [clearSignatureTrigger, setClearSignatureTrigger] = useState(0);
 
@@ -63,7 +64,8 @@ export default function WaiverForm() {
       fullName.trim() !== "" &&
         initials.trim() !== "" &&
         waiverAcknowledged &&
-        agreementAcknowledged,
+        agreementAcknowledged &&
+        unhousedAcknowledged,
       signatureData !== null,
     ];
     return steps;
@@ -105,6 +107,7 @@ export default function WaiverForm() {
     setMinorNames("");
     setWaiverAcknowledged(false);
     setAgreementAcknowledged(false);
+    setUnhousedAcknowledged(false);
     setSignatureData(null);
     setClearSignatureTrigger((prev) => prev + 1);
   }, []);
@@ -124,6 +127,10 @@ export default function WaiverForm() {
     }
     if (!agreementAcknowledged) {
       showNotification("warning", t.validationErrors.agreement);
+      return false;
+    }
+    if (!unhousedAcknowledged) {
+      showNotification("warning", t.validationErrors.unhoused);
       return false;
     }
     if (!signatureData) {
@@ -487,6 +494,24 @@ export default function WaiverForm() {
                   className="cursor-pointer leading-relaxed text-sm sm:text-base"
                 >
                   {t.acknowledgeAgreement}{" "}
+                  <span className="text-red-500">*</span>
+                </Label>
+              </div>
+
+              <div className="flex items-start space-x-3 p-3 sm:p-4 border rounded-lg hover:border-hopes-green active:border-hopes-green transition-colors checkbox-item">
+                <Checkbox
+                  id="unhousedAck"
+                  checked={unhousedAcknowledged}
+                  onCheckedChange={(checked) =>
+                    setUnhousedAcknowledged(checked as boolean)
+                  }
+                  className="mt-0.5"
+                />
+                <Label
+                  htmlFor="unhousedAck"
+                  className="cursor-pointer leading-relaxed text-sm sm:text-base"
+                >
+                  {t.acknowledgeUnhoused}{" "}
                   <span className="text-red-500">*</span>
                 </Label>
               </div>
