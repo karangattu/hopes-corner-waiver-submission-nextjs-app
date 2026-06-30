@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WaiverForm from "@/app/page";
+import { markdownComponents } from "@/lib/markdown-components";
 
 // Mock react-markdown to avoid issues with ESM
 jest.mock("react-markdown", () => {
@@ -139,5 +140,14 @@ describe("WaiverForm", () => {
     // Use getAllByText since "Liability Waiver" appears multiple times (in accordion title and checkbox label)
     expect(screen.getAllByText(/liability waiver/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/participant agreement/i).length).toBeGreaterThan(0);
+  });
+
+  it("should render bold underline markdown content as an underline", () => {
+    const Strong = markdownComponents.strong!;
+
+    render(<Strong>{["<u>", "two loads", "</u>"]}</Strong>);
+
+    expect(screen.getByText("two loads").tagName).toBe("U");
+    expect(screen.queryByText("<u>two loads</u>")).not.toBeInTheDocument();
   });
 });

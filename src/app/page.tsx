@@ -29,6 +29,7 @@ import {
   getCurrentYear,
   getPacificDate,
 } from "@/lib/utils";
+import { markdownComponents } from "@/lib/markdown-components";
 
 export default function WaiverForm() {
   // Form state
@@ -335,7 +336,7 @@ export default function WaiverForm() {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="max-h-[300px] sm:max-h-[400px] overflow-y-auto p-3 sm:p-4 bg-gray-50 rounded-lg custom-scrollbar scroll-smooth prose prose-sm max-w-none">
-                    <ReactMarkdown>{waiverContent[language]}</ReactMarkdown>
+                    <ReactMarkdown components={markdownComponents}>{waiverContent[language]}</ReactMarkdown>
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -348,7 +349,7 @@ export default function WaiverForm() {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="max-h-[300px] sm:max-h-[400px] overflow-y-auto p-3 sm:p-4 bg-gray-50 rounded-lg custom-scrollbar scroll-smooth prose prose-sm max-w-none">
-                    <ReactMarkdown>{agreementContent[language]}</ReactMarkdown>
+                    <ReactMarkdown components={markdownComponents}>{agreementContent[language]}</ReactMarkdown>
                   </div>
                 </AccordionContent>
               </AccordionItem>
